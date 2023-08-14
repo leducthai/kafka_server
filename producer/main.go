@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"hash/fnv"
 	"log"
 	"time"
 
@@ -29,11 +30,14 @@ func main() {
 	// Send real-time messages every 1 second
 	for i := 1; i <= 10; i++ {
 		message := fmt.Sprintf("Real-Time Message %d", i)
-
+		p := customHash(topic, 6)
+		fmt.Println(p)
 		// Create a new message
 		msg := &sarama.ProducerMessage{
-			Topic: topic,
-			Value: sarama.StringEncoder(message),
+			Topic:     topic,
+			Value:     sarama.StringEncoder(message),
+			Key:       sarama.ByteEncoder{0},
+			Partition: p,
 		}
 
 		// Send the message to Kafka
@@ -47,3 +51,10 @@ func main() {
 		time.Sleep(1 * time.Second) // Wait for 1 second before sending the next message
 	}
 }
+
+func customHash(topic string, numPartitions int32) int32 {
+	h := fnv.New32a()
+	h.Write([]byte(topic))
+	return int32(h.Sum32()) % numPartitions
+}
+
